@@ -17,23 +17,27 @@ module Geckodriver
       exec binary_path, *args
     end
 
-    def download hit_network=false
-      return if File.exists?(binary_path) && !hit_network
-      url = download_url
-      filename = File.basename url
+    def download
       Dir.chdir platform_install_dir do
-        FileUtils.rm_f filename
-        File.open(filename, 'wb') do |saved_file|
-          URI.parse(url).open('rb') do |read_file|
-            saved_file.write(read_file.read)
-          end
-        end
-        raise "Could not download #{url}" unless File.exists? filename
-        unpack_archive(filename)
-      end
+        url = download_url
+        filename = File.basename url
 
-      raise "Could not unarchive #{filename} to get #{binary_path}" unless File.exists? binary_path
-      FileUtils.chmod 'ugo+rx', binary_path
+        if File.exists?(filename)
+          unpack_archive(filename)
+        elsif
+          FileUtils.rm_f filename
+          File.open(filename, 'wb') do |saved_file|
+            URI.parse(url).open('rb') do |read_file|
+              saved_file.write(read_file.read)
+            end
+          end
+          raise "Could not download #{url}" unless File.exists? filename
+          unpack_archive(filename)
+        end
+
+        raise "Could not unarchive #{filename} to get #{binary_path}" unless File.exists? binary_path
+        FileUtils.chmod 'ugo+rx', binary_path
+      end
     end
 
     def unpack_archive(file)
@@ -49,7 +53,7 @@ module Geckodriver
     end
 
     def update
-      download true
+      download
     end
 
     def download_url
